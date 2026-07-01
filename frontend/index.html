@@ -1,0 +1,445 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>EcoTrans - Monitoreo y Control</title>
+  <link rel="stylesheet" href="styles.css" />
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+</head>
+<body>
+  <header>
+    <h1>EcoTrans</h1>
+    <p>Sistema de monitoreo y análisis de la red de transporte urbano.</p>
+  </header>
+  <main>
+    <section class="panel auth-panel">
+      <h2>Autenticación</h2>
+      <div class="login-grid">
+        <label>Usuario <input id="username" type="text" placeholder="usuario" autocomplete="username" /></label>
+        <label>Clave <input id="password" type="password" placeholder="contraseña" autocomplete="current-password" /></label>
+        <button id="loginButton">Iniciar sesión</button>
+      </div>
+      <div class="auth-actions">
+        <button id="logoutButton" class="secondary-button hidden">Cerrar sesión</button>
+      </div>
+      <p id="auth-message" class="info"></p>
+      <div id="user-info" class="user-info">No autenticado.</div>
+    </section>
+
+    <section class="panel controls">
+      <h2>Filtros históricos</h2>
+      <div class="control-grid">
+        <label>Año <input id="year" type="number" placeholder="2023" min="2014" max="2100" /></label>
+        <label>Mes <input id="month" type="number" placeholder="12" min="1" max="12" /></label>
+        <label>Periodo
+          <select id="period">
+            <option value="all">Todo</option>
+            <option value="peak">Horas pico</option>
+            <option value="offpeak">Horas valle</option>
+          </select>
+        </label>
+        <button id="refresh">Actualizar</button>
+      </div>
+    </section>
+
+    <section class="panel overview">
+      <h2>Indicadores clave</h2>
+      <div class="overview-grid">
+        <div class="overview-card">
+          <span class="metric-label">Viajes registrados</span>
+          <strong id="total-records">0</strong>
+        </div>
+        <div class="overview-card">
+          <span class="metric-label">Cumplimiento promedio</span>
+          <strong id="average-compliance">0%</strong>
+        </div>
+        <div class="overview-card">
+          <span class="metric-label">Incidencias abiertas</span>
+          <strong id="open-incidents">0</strong>
+        </div>
+      </div>
+    </section>
+
+    <section class="panel summary">
+      <h2>Resumen de desempeño por terminal</h2>
+      <table>
+        <thead>
+          <tr>
+            <th>Terminal</th>
+            <th>Cumplimiento (%)</th>
+            <th>Retraso promedio (min)</th>
+            <th>Registros</th>
+          </tr>
+        </thead>
+        <tbody id="table-body"></tbody>
+      </table>
+    </section>
+
+    <section class="panel charts">
+      <div class="chart-card">
+        <h3>Cumplimiento por terminal</h3>
+        <canvas id="complianceChart"></canvas>
+      </div>
+      <div class="chart-card">
+        <h3>Tiempos de espera promedio</h3>
+        <canvas id="waitChart"></canvas>
+      </div>
+    </section>
+
+    <section class="panel correlation">
+      <h2>Correlación lluvia / retrasos</h2>
+      <div class="correlation-grid">
+        <div>
+          <strong>Días lluviosos:</strong> <span id="rainy-days">0</span>
+        </div>
+        <div>
+          <strong>Días secos:</strong> <span id="dry-days">0</span>
+        </div>
+        <div>
+          <strong>Retraso promedio lluvia:</strong> <span id="rainy-delay">0</span> min
+        </div>
+        <div>
+          <strong>Retraso promedio seco:</strong> <span id="dry-delay">0</span> min
+        </div>
+      </div>
+    </section>
+
+    <section class="panel incident-panel">
+      <h2>Registro de incidencias</h2>
+      <div class="incident-grid">
+        <label>Ruta
+          <select id="incident-route">
+            <option value="">Seleccione una ruta</option>
+          </select>
+        </label>
+        <label>Terminal
+          <select id="incident-terminal">
+            <option value="">Seleccione una terminal</option>
+          </select>
+        </label>
+        <label>Tipo <input id="incident-type" type="text" placeholder="Avería, desvío, saturación" /></label>
+        <label>Descripción <input id="incident-description" type="text" placeholder="Detalle de la incidencia" /></label>
+        <button id="submitIncident">Registrar incidencia</button>
+      </div>
+      <p id="incident-message" class="info"></p>
+      <div class="incident-list">
+        <h3>Incidencias recientes</h3>
+        <table>
+          <thead>
+            <tr>
+              <th>ID</th>
+              <th>Tipo</th>
+              <th>Terminal</th>
+              <th>Ruta</th>
+              <th>Reporte</th>
+              <th>Estatus</th>
+              <th>Reportado por</th>
+            </tr>
+          </thead>
+          <tbody id="incident-body"></tbody>
+        </table>
+      </div>
+    </section>
+  </main>
+
+  <script>
+    const apiBase = 'http://localhost:8000/api';
+    const yearInput = document.getElementById('year');
+    const monthInput = document.getElementById('month');
+    const periodInput = document.getElementById('period');
+    const refreshButton = document.getElementById('refresh');
+    const tableBody = document.getElementById('table-body');
+    const complianceChart = document.getElementById('complianceChart').getContext('2d');
+    const waitChart = document.getElementById('waitChart').getContext('2d');
+    const loginButton = document.getElementById('loginButton');
+    const logoutButton = document.getElementById('logoutButton');
+    const authMessage = document.getElementById('auth-message');
+    const userInfo = document.getElementById('user-info');
+    const incidentMessage = document.getElementById('incident-message');
+    const incidentBody = document.getElementById('incident-body');
+    const routeInput = document.getElementById('incident-route');
+    const terminalInput = document.getElementById('incident-terminal');
+    const typeInput = document.getElementById('incident-type');
+    const descriptionInput = document.getElementById('incident-description');
+    const usernameInput = document.getElementById('username');
+    const passwordInput = document.getElementById('password');
+    const rainyDays = document.getElementById('rainy-days');
+    const dryDays = document.getElementById('dry-days');
+    const rainyDelay = document.getElementById('rainy-delay');
+    const dryDelay = document.getElementById('dry-delay');
+    const totalRecords = document.getElementById('total-records');
+    const averageCompliance = document.getElementById('average-compliance');
+    const openIncidents = document.getElementById('open-incidents');
+
+    let complianceChartInstance, waitChartInstance;
+    let currentUser = null;
+    let routesList = [];
+    let terminalsList = [];
+
+    function getToken() {
+      return localStorage.getItem('ecotrans_token');
+    }
+
+    function setToken(token) {
+      localStorage.setItem('ecotrans_token', token);
+    }
+
+    function clearToken() {
+      localStorage.removeItem('ecotrans_token');
+    }
+
+    function authHeader() {
+      const token = getToken();
+      return token ? { Authorization: `Bearer ${token}` } : {};
+    }
+
+    function setAuthState(user) {
+      currentUser = user;
+      if (user) {
+        userInfo.textContent = `Usuario: ${user.username} · Rol: ${user.role}`;
+        logoutButton.classList.remove('hidden');
+      } else {
+        userInfo.textContent = 'No autenticado. Por favor inicie sesión para acceder a todas las funciones.';
+        logoutButton.classList.add('hidden');
+      }
+    }
+
+    async function login() {
+      authMessage.textContent = 'Iniciando sesión...';
+      const formData = new URLSearchParams();
+      formData.append('username', usernameInput.value.trim());
+      formData.append('password', passwordInput.value);
+
+      const response = await fetch(`${apiBase}/auth/token`, {
+        method: 'POST',
+        body: formData,
+      });
+      if (!response.ok) {
+        authMessage.textContent = 'Credenciales incorrectas. Intente nuevamente.';
+        setAuthState(null);
+        return;
+      }
+      const data = await response.json();
+      setToken(data.access_token);
+      authMessage.textContent = 'Sesión iniciada correctamente.';
+      await loadCurrentUser();
+      await loadIncidents();
+      await loadMetrics();
+    }
+
+    async function logout() {
+      clearToken();
+      setAuthState(null);
+      incidentBody.innerHTML = '<tr><td colspan="7">Inicie sesión para ver las incidencias.</td></tr>';
+      authMessage.textContent = 'Sesión cerrada.';
+    }
+
+    async function loadCurrentUser() {
+      const token = getToken();
+      if (!token) {
+        setAuthState(null);
+        return;
+      }
+      const response = await fetch(`${apiBase}/auth/me`, {
+        headers: { ...authHeader(), 'Content-Type': 'application/json' },
+      });
+      if (!response.ok) {
+        clearToken();
+        setAuthState(null);
+        return;
+      }
+      const user = await response.json();
+      setAuthState(user);
+    }
+
+    async function loadMetadata() {
+      const [routesResponse, terminalsResponse] = await Promise.all([
+        fetch(`${apiBase}/metadata/routes`),
+        fetch(`${apiBase}/metadata/terminals`),
+      ]);
+      if (routesResponse.ok) {
+        routesList = await routesResponse.json();
+      }
+      if (terminalsResponse.ok) {
+        terminalsList = await terminalsResponse.json();
+      }
+      populateIncidentSelectors();
+    }
+
+    function populateIncidentSelectors() {
+      routeInput.innerHTML = '<option value="">Seleccione una ruta</option>';
+      routesList.forEach((route) => {
+        const option = document.createElement('option');
+        option.value = route.id || '';
+        option.textContent = `${route.code}: ${route.origin} → ${route.destination}`;
+        routeInput.appendChild(option);
+      });
+
+      terminalInput.innerHTML = '<option value="">Seleccione una terminal</option>';
+      terminalsList.forEach((terminal) => {
+        const option = document.createElement('option');
+        option.value = terminal.id || '';
+        option.textContent = terminal.name;
+        terminalInput.appendChild(option);
+      });
+    }
+
+    async function loadMetrics() {
+      const year = yearInput.value || '';
+      const month = monthInput.value || '';
+      const period = periodInput.value;
+      const params = new URLSearchParams();
+      if (year) params.append('year', year);
+      if (month) params.append('month', month);
+      params.append('period', period);
+
+      const response = await fetch(`${apiBase}/analytics/summary?${params.toString()}`);
+      if (!response.ok) {
+        tableBody.innerHTML = '<tr><td colspan="4">No se pudieron cargar los datos de rendimiento.</td></tr>';
+        return;
+      }
+      const data = await response.json();
+      const terminals = data.terminals || [];
+      renderTable(terminals);
+      renderCharts(terminals);
+      updateOverview(terminals);
+      await loadRainCorrelation(year, month);
+    }
+
+    async function loadRainCorrelation(year, month) {
+      const params = new URLSearchParams();
+      if (year) params.append('year', year);
+      if (month) params.append('month', month);
+      const response = await fetch(`${apiBase}/analytics/rain-correlation?${params.toString()}`);
+      if (!response.ok) {
+        rainyDays.textContent = '0';
+        dryDays.textContent = '0';
+        rainyDelay.textContent = '0.0';
+        dryDelay.textContent = '0.0';
+        return;
+      }
+      const data = await response.json();
+      rainyDays.textContent = data.rainy_days;
+      dryDays.textContent = data.dry_days;
+      rainyDelay.textContent = data.rainy_average_delay.toFixed(1);
+      dryDelay.textContent = data.dry_average_delay.toFixed(1);
+    }
+
+    function renderTable(terminals) {
+      tableBody.innerHTML = '';
+      if (!terminals.length) {
+        tableBody.innerHTML = '<tr><td colspan="4">No hay datos de terminal disponibles para ese periodo.</td></tr>';
+        return;
+      }
+      terminals.forEach((terminal) => {
+        const row = document.createElement('tr');
+        row.innerHTML = `
+          <td>${terminal.terminal_name}</td>
+          <td>${terminal.compliance_rate.toFixed(1)}%</td>
+          <td>${terminal.average_wait_minutes.toFixed(1)}</td>
+          <td>${terminal.sample_count}</td>
+        `;
+        tableBody.appendChild(row);
+      });
+    }
+
+    function renderCharts(terminals) {
+      const labels = terminals.map((t) => t.terminal_name);
+      const complianceData = terminals.map((t) => t.compliance_rate);
+      const waitData = terminals.map((t) => t.average_wait_minutes);
+
+      if (complianceChartInstance) complianceChartInstance.destroy();
+      if (waitChartInstance) waitChartInstance.destroy();
+
+      complianceChartInstance = new Chart(complianceChart, {
+        type: 'bar',
+        data: {
+          labels,
+          datasets: [{ label: 'Cumplimiento (%)', data: complianceData, backgroundColor: '#2b7a78' }],
+        },
+        options: {
+          responsive: true,
+          plugins: { legend: { display: false } },
+          scales: { y: { beginAtZero: true, max: 100 } },
+        },
+      });
+
+      waitChartInstance = new Chart(waitChart, {
+        type: 'line',
+        data: {
+          labels,
+          datasets: [{ label: 'Retraso promedio (min)', data: waitData, borderColor: '#17252a', backgroundColor: '#3aafa9', fill: true, tension: 0.3 }],
+        },
+        options: {
+          responsive: true,
+          plugins: { legend: { display: false } },
+          scales: { y: { beginAtZero: true, suggestedMax: Math.max(...waitData, 10) + 5 } },
+        },
+      });
+    }
+
+    function updateOverview(terminals) {
+      const totalRecordsValue = terminals.reduce((sum, terminal) => sum + (terminal.sample_count || 0), 0);
+      const totalCompliance = terminals.reduce((sum, terminal) => sum + (terminal.compliance_rate || 0), 0);
+      const average = terminals.length ? totalCompliance / terminals.length : 0;
+      totalRecords.textContent = totalRecordsValue.toLocaleString();
+      averageCompliance.textContent = `${average.toFixed(1)} %`;
+      openIncidents.textContent = incidentBody.children.length > 0 ? incidentBody.children.length : '0';
+    }
+
+    async function loadIncidents() {
+      const response = await fetch(`${apiBase}/incidents`, { headers: authHeader() });
+      if (!response.ok) {
+        incidentBody.innerHTML = '<tr><td colspan="7">Inicie sesión para ver las incidencias.</td></tr>';
+        openIncidents.textContent = '0';
+        return;
+      }
+      const incidents = await response.json();
+      incidentBody.innerHTML = incidents.map((incident) => `
+        <tr>
+          <td>${incident.id}</td>
+          <td>${incident.type}</td>
+          <td>${incident.terminal_name || '-'}</td>
+          <td>${incident.route_code || '-'}</td>
+          <td>${new Date(incident.report_time).toLocaleString()}</td>
+          <td>${incident.status}</td>
+          <td>${incident.reported_by}</td>
+        </tr>
+      `).join('');
+      openIncidents.textContent = incidents.length.toString();
+    }
+
+    async function createIncident() {
+      incidentMessage.textContent = 'Enviando incidencia...';
+      const body = {
+        route_id: routeInput.value ? Number(routeInput.value) : null,
+        terminal_id: terminalInput.value ? Number(terminalInput.value) : null,
+        type: typeInput.value,
+        description: descriptionInput.value,
+      };
+      const response = await fetch(`${apiBase}/incidents`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', ...authHeader() },
+        body: JSON.stringify(body),
+      });
+      if (!response.ok) {
+        incidentMessage.textContent = 'Error al registrar la incidencia. Revise sus datos o inicie sesión.';
+        return;
+      }
+      incidentMessage.textContent = 'Incidencia registrada correctamente.';
+      await loadIncidents();
+    }
+
+    loginButton.addEventListener('click', login);
+    logoutButton.addEventListener('click', logout);
+    refreshButton.addEventListener('click', loadMetrics);
+    document.getElementById('submitIncident').addEventListener('click', createIncident);
+
+    loadCurrentUser();
+    loadMetadata();
+    loadMetrics();
+    loadIncidents();
+  </script>
+</body>
+</html>

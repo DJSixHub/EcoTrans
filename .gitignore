@@ -1,0 +1,10 @@
+__pycache__/
+*.py[cod]
+*.pyo
+*.log
+.env
+.venv/
+backend/__pycache__/
+frontend/__pycache__/
+**/__pycache__/
+.DS_Store

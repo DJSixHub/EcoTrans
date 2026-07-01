@@ -1,0 +1,71 @@
+Este documento contiene la orientación detallada del proyectos, siguiendo las metodologías de ciclo de vida de ingeniería de datos (CRISP-DM / TDSP):
+
+ Directrices Generales
+1. Seguridad y Persistencia de Datos:
+🛑 Prohibido el uso de SQL nativo (Raw SQL) embebido como cadenas de texto en el código.
+Es obligatorio el uso de un ORM (como SQLAlchemy, SQLModel o Tortoise-ORM) para mitigar
+vulnerabilidades de inyección de código SQL.
+🛑 Prohibidas las inicializaciones manuales: Toda base de datos debe desplegarse e
+inicializarse mediante scripts de migración formales y versionados (ej. Alembic).
+⚠ Tamaño de la Base de Datos: El almacenamiento inicial y los archivos de datos semilla
+deben estar optimizados. No se permitirán bases de datos locales sobredimensionadas
+(+500MB) debido a una mala indexación o redundancia de tipos de datos.
+
+2. Arquitectura y Dockerización:
+🛑 El proyecto se evaluará clonando el repositorio y ejecutando
+un único comando: 
+docker-compose up --build
+. Si el sistema no compila, se aísla o falla
+por variables de entorno mal configuradas, la fase se considerará suspendida.
+Se requiere una arquitectura limpia de Microservicios totalmente independientes (Frontend,
+REST API Backend, y Base de Datos) comunicados a través de redes internas de Docker.
+
+
+ Sistema de Monitoreo y Análisis de la Red de Transporte
+Urbano (EcoTrans)
+🎯 Enfoque
+1 / 4
+
+Procesamiento de datos de movilidad, análisis geoespacial básico, series de tiempo de frecuencias de
+transporte y optimización de flujos de pasajeros bajo condiciones externas.
+🗺 Cronograma de Desarrollo por Fases
+📌 FASE 1: Infraestructura Base e Ingestión Histórica
+Almacenamiento: Configuración de una base de datos.
+Ingestión de Datos: Construcción de un pipeline ETL (en Python limpio) para la extracción, limpieza e
+inserción de datos históricos (mínimo 10 años) sobre despacho de ómnibus, rutas, frecuencias
+planificadas y reportes de pasajeros por franja horaria.
+Funcionalidad Analítica: Consultas analíticas para calcular de forma dinámica el índice de
+cumplimiento de rutas y los tiempos de espera promedio por períodos de tiempo (año, mes, rangos de
+horas pico vs. horas valle).
+Visualización Básica: Interfaz web inicial (tablas dinámicas y gráficos de barras/líneas) que resuma la
+eficiencia histórica por terminal de transporte.
+📌 FASE 2: Interfaz, Persistencia Avanzada e Integración Externa
+Gestión de Usuarios: Implementación obligatoria de un sistema completo de autenticación y control
+de accesos por roles (Register, Login, Logout), definiendo roles como: Administrador, Inspector de
+Terminal y Analista de Datos.
+Capa de Persistencia (ORM): Migración y abstracción completa de las consultas de la Fase 1 utilizando
+un ORM. Configuración de migraciones automatizadas.
+Extensión e Integración de Datos: Consumo e integración de un dataset o API externa con el
+histórico meteorológico de la región (precipitaciones, tormentas, inundaciones). El sistema debe
+permitir correlacionar los días de lluvias intensas con el aumento de los tiempos de retraso en las rutas
+de ómnibus.
+📌 FASE 3: API REST, Containerización y DataOps
+Arquitectura de Microservicios: Separación estricta del proyecto en tres contenedores Docker
+independientes: 
+frontend
+, 
+backend_api
+, y 
+database
+.
+Endpoints de la API: Diseño de una API REST protegida por tokens (JWT). Los endpoints deben:
+1. Servir las consultas analíticas guardadas de los usuarios y las búsquedas dinámicas.
+2. Implementar un CRUD completo donde los inspectores autorizados puedan registrar incidencias
+en tiempo real (ómnibus rotos, desvíos de ruta).
+Despliegue Multi-contenedor: Creación de 
+Dockerfiles
+ optimizados para producción y un archivo
+docker-compose.yml
+ que gestione volúmenes persistentes y variables de entorno (
+.env
+).
