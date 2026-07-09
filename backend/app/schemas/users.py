@@ -1,10 +1,10 @@
-from pydantic import BaseModel, EmailStr
+from pydantic import BaseModel
 
 
 class UserRead(BaseModel):
     id: int
     username: str
-    email: EmailStr
+    email: str
     role: str
 
     class Config:

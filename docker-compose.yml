@@ -14,10 +14,16 @@ services:
       - db_data:/var/lib/postgresql/data
     networks:
       - ecotrans-net
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER} -d ${POSTGRES_DB}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
 
   backend_api:
     build:
       context: ./backend
+      target: runner
     env_file:
       - .env
     environment:
@@ -33,15 +39,15 @@ services:
     ports:
       - "8000:8000"
     depends_on:
-      - database
-    volumes:
-      - ./backend:/app
+      database:
+        condition: service_healthy
     networks:
       - ecotrans-net
 
   frontend:
     build:
       context: ./frontend
+      target: runner
     ports:
       - "3000:80"
     depends_on:

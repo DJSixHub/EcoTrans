@@ -33,9 +33,9 @@ async def create_default_users() -> None:
         if total and total > 0:
             return
         default_users = [
-            {"username": "admin", "email": "admin@ecotrans.local", "password": "Admin123!", "role": "admin"},
-            {"username": "inspector", "email": "inspector@ecotrans.local", "password": "Inspect123!", "role": "inspector"},
-            {"username": "analyst", "email": "analyst@ecotrans.local", "password": "Analyst123!", "role": "analyst"},
+            {"username": "admin", "email": "admin@ecotrans.com", "password": "Admin123!", "role": "admin"},
+            {"username": "inspector", "email": "inspector@ecotrans.com", "password": "Inspect123!", "role": "inspector"},
+            {"username": "analyst", "email": "analyst@ecotrans.com", "password": "Analyst123!", "role": "analyst"},
         ]
         for user_data in default_users:
             user = User(

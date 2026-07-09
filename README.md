@@ -1,44 +1,43 @@
 # EcoTrans
-Sistema de Monitoreo y Análisis de la Red de Transporte Urbano
 
-## Fase 1 - Infraestructura Base e Ingestión Histórica
+Sistema de Monitoreo y Análisis de la Red de Transporte Urbano.
 
-Este proyecto implementa:
-- Base de datos PostgreSQL en contenedor Docker.
-- Backend Python con FastAPI y SQLModel.
-- Pipeline ETL para ingestión de datos históricos de transporte urbano.
-- Interfaz web inicial en un contenedor independiente.
-- Migraciones versionadas con Alembic.
+## Stack
 
-## Arquitectura
+- **Base de datos**: PostgreSQL 15 en contenedor Docker
+- **Backend**: Python + FastAPI + SQLModel, puerto `8000`
+- **Frontend**: HTML/CSS/JS estático servido con nginx, puerto `3000`
 
-Servicios:
-- `database`: PostgreSQL.
-- `backend_api`: FastAPI + SQLModel, expone `/api/analytics/summary`.
-- `frontend`: sitio estático con visualizaciones básicas.
-
-## Ejecución
-
-Desde la raíz del repositorio:
+## Levantar el proyecto
 
 ```bash
 docker-compose up --build
 ```
 
-Luego abrir:
+Esto construye e inicia tres contenedores: `database`, `backend_api`, `frontend`.
 
-- Frontend: http://localhost:3000
-- Backend: http://localhost:8000
+## Visualización
 
-## Validación
+| Componente | URL |
+|------------|-----|
+| Frontend | http://localhost:3000 |
+| Backend API | http://localhost:8000 |
+| Documentación Swagger | http://localhost:8000/docs |
 
-- `docker-compose up --build` construye y levanta los tres servicios.
-- El backend inicializa la base de datos y carga el dataset histórico automáticamente.
-- La interfaz consume el backend para mostrar métricas de cumplimiento y tiempos de espera.
+## Usuarios y roles
 
-## Desarrollo futuro (Fases 2 y 3)
+| Usuario | Contraseña | Rol | Permisos |
+|---------|-----------|-----|----------|
+| `admin` | `Admin123!` | Administrador | CRUD de eventos, incidencias, usuarios; acceso a todos los paneles |
+| `inspector` | `Inspect123!` | Inspector | CRUD de incidencias, lectura de eventos y paneles |
+| `analyst` | `Analyst123!` | Analista | Solo visualización de paneles (sin CRUD) |
 
-- Autenticación y roles (Administrador, Inspector, Analista).
-- Endpoints REST protegidos por JWT.
-- Registros de incidencias en tiempo real.
-- Integración de datos meteorológicos y correlación con retrasos.
+## Funcionalidades
+
+- **Autenticación JWT** con roles (admin, inspector, analyst)
+- **Dashboard con paneles**: resumen, gráficos (cumplimiento, espera, serie temporal), mapa geo de terminales, correlación con lluvia
+- **Gestión de eventos históricos** (`DispatchEvent`): CRUD de salidas programadas
+- **Registro de incidencias** en tiempo real
+- **Panel admin**: listar/eliminar usuarios, estadísticas del sistema
+- **Mapa interactivo** con las 6 terminales georreferenciadas
+- **Correlación lluvia**: compara días lluviosos vs secos (pasajeros, espera, cumplimiento)

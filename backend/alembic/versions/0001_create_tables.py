@@ -20,6 +20,8 @@ def upgrade() -> None:
         sa.Column('id', sa.Integer(), primary_key=True),
         sa.Column('name', sa.String(), nullable=False, unique=True),
         sa.Column('zone', sa.String(), nullable=False),
+        sa.Column('latitude', sa.Float(), nullable=False, server_default="0.0"),
+        sa.Column('longitude', sa.Float(), nullable=False, server_default="0.0"),
     )
     op.create_index(op.f('ix_terminal_name'), 'terminal', ['name'], unique=False)
 
@@ -29,6 +31,7 @@ def upgrade() -> None:
         sa.Column('code', sa.String(), nullable=False, unique=True),
         sa.Column('origin', sa.String(), nullable=False),
         sa.Column('destination', sa.String(), nullable=False),
+        sa.Column('route_type', sa.String(), nullable=False, server_default="Regular"),
     )
     op.create_index(op.f('ix_route_code'), 'route', ['code'], unique=False)
 
@@ -80,6 +83,14 @@ def upgrade() -> None:
         sa.Column('actual_minutes', sa.Integer(), nullable=False),
         sa.Column('passengers_boarded', sa.Integer(), nullable=False),
         sa.Column('on_time', sa.Boolean(), nullable=False),
+        sa.Column('planned_frequency_minutes', sa.Integer(), nullable=False, server_default='0'),
+        sa.Column('route_type', sa.String(), nullable=False, server_default='Regular'),
+        sa.Column('service_level', sa.String(), nullable=False, server_default='Standard'),
+        sa.Column('day_type', sa.String(), nullable=False, server_default='weekday'),
+        sa.Column('peak_period', sa.String(), nullable=False, server_default='offpeak'),
+        sa.Column('vehicle_capacity', sa.Integer(), nullable=False, server_default='50'),
+        sa.Column('passenger_load_factor', sa.Float(), nullable=False, server_default='0.0'),
+        sa.Column('weather_condition', sa.String(), nullable=True),
     )
     op.create_index(op.f('ix_dispatchevent_dispatch_datetime'), 'dispatchevent', ['dispatch_datetime'], unique=False)
     op.create_index(op.f('ix_dispatchevent_route_id'), 'dispatchevent', ['route_id'], unique=False)

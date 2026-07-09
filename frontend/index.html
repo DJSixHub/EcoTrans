@@ -12,7 +12,7 @@
     <h1>EcoTrans</h1>
     <p>Sistema de monitoreo y análisis de la red de transporte urbano.</p>
   </header>
-  <main>
+<main>
     <section class="panel auth-panel">
       <h2>Autenticación</h2>
       <div class="login-grid">
@@ -24,14 +24,22 @@
         <button id="logoutButton" class="secondary-button hidden">Cerrar sesión</button>
       </div>
       <p id="auth-message" class="info"></p>
-      <div id="user-info" class="user-info">No autenticado.</div>
+      <div id="user-info" class="user-info">No autenticado. Por favor inicie sesión para acceder a todas las funciones.</div>
     </section>
 
-    <section class="panel controls">
+    <section class="panel controls" id="controls-panel" style="display:none;">
       <h2>Filtros históricos</h2>
       <div class="control-grid">
-        <label>Año <input id="year" type="number" placeholder="2023" min="2014" max="2100" /></label>
-        <label>Mes <input id="month" type="number" placeholder="12" min="1" max="12" /></label>
+        <label>Año
+          <select id="year">
+            <option value="all">Todo</option>
+          </select>
+        </label>
+        <label>Mes
+          <select id="month">
+            <option value="all">Todo</option>
+          </select>
+        </label>
         <label>Periodo
           <select id="period">
             <option value="all">Todo</option>
@@ -41,9 +49,19 @@
         </label>
         <button id="refresh">Actualizar</button>
       </div>
+      <div class="calendar-panel">
+        <div class="calendar-header">
+          <strong>Calendario de eventos</strong>
+          <button id="clearDate" class="secondary-button">Borrar selección</button>
+        </div>
+        <div id="calendarGrid" class="calendar-grid"></div>
+        <div class="calendar-footer">
+          <span id="selectedDateLabel">Ningún día seleccionado</span>
+        </div>
+      </div>
     </section>
 
-    <section class="panel overview">
+    <section class="panel overview" id="overview-panel" style="display:none;">
       <h2>Indicadores clave</h2>
       <div class="overview-grid">
         <div class="overview-card">
@@ -61,7 +79,7 @@
       </div>
     </section>
 
-    <section class="panel summary">
+    <section class="panel summary" id="summary-panel" style="display:none;">
       <h2>Resumen de desempeño por terminal</h2>
       <table>
         <thead>
@@ -76,7 +94,7 @@
       </table>
     </section>
 
-    <section class="panel charts">
+    <section class="panel charts" id="charts-panel" style="display:none;">
       <div class="chart-card">
         <h3>Cumplimiento por terminal</h3>
         <canvas id="complianceChart"></canvas>
@@ -87,7 +105,18 @@
       </div>
     </section>
 
-    <section class="panel correlation">
+    <section class="panel analytics-extra" id="analytics-extra-panel" style="display:none;">
+      <div class="chart-card">
+        <h3>Serie temporal de cumplimiento</h3>
+        <canvas id="timeSeriesChart"></canvas>
+      </div>
+      <div class="chart-card">
+        <h3>Terminales georreferenciadas</h3>
+        <canvas id="geoChart"></canvas>
+      </div>
+    </section>
+
+    <section class="panel correlation" id="correlation-panel" style="display:none;">
       <h2>Correlación lluvia / retrasos</h2>
       <div class="correlation-grid">
         <div>
@@ -105,7 +134,74 @@
       </div>
     </section>
 
-    <section class="panel incident-panel">
+    <section class="panel event-panel" id="event-panel" style="display:none;">
+      <h2>Gestión de eventos históricos</h2>
+      <div class="incident-grid">
+        <label>Ruta
+          <select id="event-route">
+            <option value="">Seleccione una ruta</option>
+          </select>
+        </label>
+        <label>Terminal
+          <select id="event-terminal">
+            <option value="">Seleccione una terminal</option>
+          </select>
+        </label>
+        <label>Fecha y hora <input id="event-datetime" type="datetime-local" /></label>
+        <label>Programado (min) <input id="event-scheduled" type="number" min="1" /></label>
+        <label>Real (min) <input id="event-actual" type="number" min="1" /></label>
+        <label>Pasajeros <input id="event-passengers" type="number" min="0" /></label>
+        <label>Frecuencia (min) <input id="event-frequency" type="number" min="1" /></label>
+        <label>Capacidad <input id="event-capacity" type="number" min="1" /></label>
+        <label>Nivel servicio
+          <select id="event-service-level">
+            <option value="Standard">Standard</option>
+            <option value="High">High</option>
+            <option value="Reduced">Reduced</option>
+          </select>
+        </label>
+        <label>Tipo de día
+          <select id="event-day-type">
+            <option value="weekday">Entre semana</option>
+            <option value="weekend">Fin de semana</option>
+            <option value="holiday">Feriado</option>
+          </select>
+        </label>
+        <label>Periodo pico
+          <select id="event-peak-period">
+            <option value="morning">Mañana</option>
+            <option value="midday">Mediodía</option>
+            <option value="afternoon">Tarde</option>
+            <option value="night">Noche</option>
+            <option value="offpeak">Fuera de pico</option>
+          </select>
+        </label>
+        <label>Condición clima <input id="event-weather" type="text" placeholder="Despejado, Lluvia..." /></label>
+        <button id="saveEvent">Guardar evento</button>
+      </div>
+      <p id="event-message" class="info"></p>
+      <div class="incident-list">
+        <h3>Eventos recientes</h3>
+        <div class="table-scroll">
+          <table>
+            <thead>
+              <tr>
+                <th>ID</th>
+                <th>Ruta</th>
+                <th>Terminal</th>
+                <th>Fecha</th>
+                <th>Pasajeros</th>
+                <th>Servicio</th>
+                <th>Acciones</th>
+              </tr>
+            </thead>
+            <tbody id="event-body"></tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+
+    <section class="panel incident-panel" id="incident-panel" style="display:none;">
       <h2>Registro de incidencias</h2>
       <div class="incident-grid">
         <label>Ruta
@@ -125,23 +221,40 @@
       <p id="incident-message" class="info"></p>
       <div class="incident-list">
         <h3>Incidencias recientes</h3>
-        <table>
-          <thead>
-            <tr>
-              <th>ID</th>
-              <th>Tipo</th>
-              <th>Terminal</th>
-              <th>Ruta</th>
-              <th>Reporte</th>
-              <th>Estatus</th>
-              <th>Reportado por</th>
-            </tr>
-          </thead>
-          <tbody id="incident-body"></tbody>
-        </table>
+        <div class="table-scroll">
+          <table>
+            <thead>
+              <tr>
+                <th>ID</th>
+                <th>Tipo</th>
+                <th>Terminal</th>
+                <th>Ruta</th>
+                <th>Reporte</th>
+                <th>Estatus</th>
+                <th>Reportado por</th>
+              </tr>
+            </thead>
+            <tbody id="incident-body"></tbody>
+          </table>
+        </div>
       </div>
     </section>
-  </main>
+
+    <section class="panel admin-panel" id="admin-panel" style="display:none;">
+      <h2>Panel de Administración</h2>
+      <div class="admin-grid">
+        <div class="admin-card">
+          <h3>Gestión de Usuarios</h3>
+          <button id="loadUsers">Cargar Usuarios</button>
+          <div id="users-list"></div>
+        </div>
+        <div class="admin-card">
+          <h3>Estadísticas del Sistema</h3>
+          <button id="loadSystemStats">Actualizar Estadísticas</button>
+          <div id="system-stats"></div>
+        </div>
+      </div>
+    </section>
 
   <script>
     const apiBase = 'http://localhost:8000/api';
@@ -171,11 +284,34 @@
     const totalRecords = document.getElementById('total-records');
     const averageCompliance = document.getElementById('average-compliance');
     const openIncidents = document.getElementById('open-incidents');
+    const calendarGrid = document.getElementById('calendarGrid');
+    const selectedDateLabel = document.getElementById('selectedDateLabel');
+    const clearDate = document.getElementById('clearDate');
+    const timeSeriesChart = document.getElementById('timeSeriesChart').getContext('2d');
+    const geoChart = document.getElementById('geoChart').getContext('2d');
+    const eventRoute = document.getElementById('event-route');
+    const eventTerminal = document.getElementById('event-terminal');
+    const eventDateTime = document.getElementById('event-datetime');
+    const eventScheduled = document.getElementById('event-scheduled');
+    const eventActual = document.getElementById('event-actual');
+    const eventPassengers = document.getElementById('event-passengers');
+    const eventFrequency = document.getElementById('event-frequency');
+    const eventCapacity = document.getElementById('event-capacity');
+    const eventServiceLevel = document.getElementById('event-service-level');
+    const eventDayType = document.getElementById('event-day-type');
+    const eventPeakPeriod = document.getElementById('event-peak-period');
+    const eventWeather = document.getElementById('event-weather');
+    const saveEventButton = document.getElementById('saveEvent');
+    const eventMessage = document.getElementById('event-message');
+    const eventBody = document.getElementById('event-body');
 
-    let complianceChartInstance, waitChartInstance;
+    let complianceChartInstance, waitChartInstance, timeSeriesChartInstance, geoChartInstance;
     let currentUser = null;
+    let selectedDate = null;
+    let selectedEventId = null;
     let routesList = [];
     let terminalsList = [];
+    let availablePeriodData = { years: [], months: [], year_months: {} };
 
     function getToken() {
       return localStorage.getItem('ecotrans_token');
@@ -199,10 +335,50 @@
       if (user) {
         userInfo.textContent = `Usuario: ${user.username} · Rol: ${user.role}`;
         logoutButton.classList.remove('hidden');
+        applyRolePermissions(user.role);
       } else {
         userInfo.textContent = 'No autenticado. Por favor inicie sesión para acceder a todas las funciones.';
         logoutButton.classList.add('hidden');
+        hideAllRolePanels();
       }
+    }
+
+    function applyRolePermissions(role) {
+      hideAllRolePanels();
+      const incidentPanel = document.getElementById('incident-panel');
+      const adminPanel = document.getElementById('admin-panel');
+      const eventPanel = document.querySelector('.event-panel');
+      const analyticsPanels = [
+        document.getElementById('controls-panel'),
+        document.getElementById('overview-panel'),
+        document.getElementById('summary-panel'),
+        document.getElementById('charts-panel'),
+        document.getElementById('analytics-extra-panel'),
+        document.getElementById('correlation-panel'),
+      ];
+
+      if (role === 'admin') {
+        if (incidentPanel) incidentPanel.style.display = 'block';
+        if (adminPanel) adminPanel.style.display = 'block';
+        if (eventPanel) eventPanel.style.display = 'block';
+        analyticsPanels.forEach(p => p && (p.style.display = 'block'));
+      } else if (role === 'inspector') {
+        if (incidentPanel) incidentPanel.style.display = 'block';
+        if (eventPanel) eventPanel.style.display = 'block';
+        analyticsPanels.forEach(p => p && (p.style.display = 'block'));
+      } else if (role === 'analyst') {
+        if (eventPanel) eventPanel.style.display = 'block';
+        analyticsPanels.forEach(p => p && (p.style.display = 'block'));
+      }
+    }
+
+    function hideAllRolePanels() {
+      const incidentPanel = document.getElementById('incident-panel');
+      const adminPanel = document.getElementById('admin-panel');
+      const eventPanel = document.querySelector('.event-panel');
+      if (incidentPanel) incidentPanel.style.display = 'none';
+      if (adminPanel) adminPanel.style.display = 'none';
+      if (eventPanel) eventPanel.style.display = 'none';
     }
 
     async function login() {
@@ -265,6 +441,9 @@
         terminalsList = await terminalsResponse.json();
       }
       populateIncidentSelectors();
+      await populateEventSelectors();
+      await loadPeriodOptions();
+      await loadCalendar();
     }
 
     function populateIncidentSelectors() {
@@ -285,13 +464,59 @@
       });
     }
 
+    async function loadPeriodOptions() {
+      const response = await fetch(`${apiBase}/analytics/periods`);
+      if (!response.ok) {
+        yearInput.innerHTML = '<option value="all">Todo</option>';
+        monthInput.innerHTML = '<option value="all">Todo</option>';
+        return;
+      }
+      const data = await response.json();
+      availablePeriodData = data;
+
+      yearInput.innerHTML = '<option value="all">Todo</option>';
+      data.years.forEach((year) => {
+        const option = document.createElement('option');
+        option.value = year;
+        option.textContent = year;
+        yearInput.appendChild(option);
+      });
+
+      monthInput.innerHTML = '<option value="all">Todo</option>';
+      data.months.forEach((month) => {
+        const option = document.createElement('option');
+        option.value = month;
+        option.textContent = month;
+        monthInput.appendChild(option);
+      });
+    }
+
+    function updateMonthOptions() {
+      const selectedYear = yearInput.value;
+      const monthOptions = new Set(availablePeriodData.months || []);
+      let months = availablePeriodData.months || [];
+      if (selectedYear && selectedYear !== 'all') {
+        const yearValue = Number(selectedYear);
+        months = availablePeriodData.year_months?.[yearValue] || [];
+      }
+
+      monthInput.innerHTML = '<option value="all">Todo</option>';
+      months.forEach((month) => {
+        const option = document.createElement('option');
+        option.value = month;
+        option.textContent = month;
+        monthInput.appendChild(option);
+      });
+    }
+
     async function loadMetrics() {
-      const year = yearInput.value || '';
-      const month = monthInput.value || '';
+      const year = yearInput.value;
+      const month = monthInput.value;
       const period = periodInput.value;
       const params = new URLSearchParams();
-      if (year) params.append('year', year);
-      if (month) params.append('month', month);
+      if (year && year !== 'all') params.append('year', year);
+      if (month && month !== 'all') params.append('month', month);
+      if (selectedDate) params.append('selected_date', selectedDate);
       params.append('period', period);
 
       const response = await fetch(`${apiBase}/analytics/summary?${params.toString()}`);
@@ -305,12 +530,13 @@
       renderCharts(terminals);
       updateOverview(terminals);
       await loadRainCorrelation(year, month);
+      await loadCalendar();
     }
 
     async function loadRainCorrelation(year, month) {
       const params = new URLSearchParams();
-      if (year) params.append('year', year);
-      if (month) params.append('month', month);
+      if (year && year !== 'all') params.append('year', year);
+      if (month && month !== 'all') params.append('month', month);
       const response = await fetch(`${apiBase}/analytics/rain-correlation?${params.toString()}`);
       if (!response.ok) {
         rainyDays.textContent = '0';
@@ -324,6 +550,307 @@
       dryDays.textContent = data.dry_days;
       rainyDelay.textContent = data.rainy_average_delay.toFixed(1);
       dryDelay.textContent = data.dry_average_delay.toFixed(1);
+    }
+
+    async function loadCalendar() {
+      const year = yearInput.value;
+      const month = monthInput.value;
+      if (!year || year === 'all' || !month || month === 'all') {
+        calendarGrid.innerHTML = '<div class="calendar-footer">Seleccione un año y mes para ver el calendario.</div>';
+        return;
+      }
+      const params = new URLSearchParams({ year, month });
+      const response = await fetch(`${apiBase}/analytics/calendar?${params.toString()}`);
+      if (!response.ok) {
+        calendarGrid.innerHTML = '<div class="calendar-footer">No se pudo cargar el calendario.</div>';
+        return;
+      }
+      const data = await response.json();
+      renderCalendar(data, Number(year), Number(month));
+    }
+
+    function renderCalendar(events, year, month) {
+      const daysInMonth = new Date(year, month, 0).getDate();
+      const activeDays = new Set(events.map((entry) => new Date(entry.date).getDate()));
+      calendarGrid.innerHTML = '';
+      for (let day = 1; day <= daysInMonth; day += 1) {
+        const button = document.createElement('button');
+        button.type = 'button';
+        button.className = 'day-cell' + (activeDays.has(day) ? ' active' : '');
+        button.textContent = day;
+        button.disabled = !activeDays.has(day);
+        button.addEventListener('click', () => setSelectedDate(year, month, day));
+        calendarGrid.appendChild(button);
+      }
+      if (selectedDate) {
+        selectedDateLabel.textContent = `Fecha seleccionada: ${selectedDate}`;
+      }
+    }
+
+    function setSelectedDate(year, month, day) {
+      selectedDate = `${year.toString().padStart(4, '0')}-${month.toString().padStart(2, '0')}-${day.toString().padStart(2, '0')}`;
+      selectedDateLabel.textContent = `Fecha seleccionada: ${selectedDate}`;
+      loadMetrics();
+      loadTimeSeries();
+      loadGeoData();
+      loadEvents();
+    }
+
+    function clearSelectedDate() {
+      selectedDate = null;
+      selectedDateLabel.textContent = 'Ningún día seleccionado';
+      loadMetrics();
+      loadTimeSeries();
+      loadGeoData();
+      loadEvents();
+    }
+
+    async function loadTimeSeries() {
+      const year = yearInput.value;
+      const month = monthInput.value;
+      const period = periodInput.value;
+      const params = new URLSearchParams({ frequency: 'month' });
+      if (year && year !== 'all') params.append('year', year);
+      if (month && month !== 'all') params.append('month', month);
+      if (period && period !== 'all') params.append('period', period);
+      if (selectedDate) params.append('selected_date', selectedDate);
+      const response = await fetch(`${apiBase}/analytics/timeseries?${params.toString()}`);
+      if (!response.ok) {
+        return;
+      }
+      const data = await response.json();
+      const labels = data.points.map((point) => point.date);
+      const complianceData = data.points.map((point) => point.compliance_rate);
+      const delayData = data.points.map((point) => point.average_delay);
+      if (timeSeriesChartInstance) timeSeriesChartInstance.destroy();
+      timeSeriesChartInstance = new Chart(timeSeriesChart, {
+        type: 'line',
+        data: {
+          labels,
+          datasets: [
+            { label: 'Cumplimiento (%)', data: complianceData, borderColor: '#2b7a78', backgroundColor: '#2b7a78', fill: false, tension: 0.2 },
+            { label: 'Retraso promedio (min)', data: delayData, borderColor: '#ef476f', backgroundColor: '#ef476f', fill: false, tension: 0.2 },
+          ],
+        },
+        options: {
+          responsive: true,
+          plugins: { legend: { position: 'top' } },
+          scales: { y: { beginAtZero: true } },
+        },
+      });
+    }
+
+    async function loadGeoData() {
+      const year = yearInput.value;
+      const month = monthInput.value;
+      const period = periodInput.value;
+      const params = new URLSearchParams();
+      if (year && year !== 'all') params.append('year', year);
+      if (month && month !== 'all') params.append('month', month);
+      if (period && period !== 'all') params.append('period', period);
+      if (selectedDate) params.append('selected_date', selectedDate);
+      const response = await fetch(`${apiBase}/analytics/geo-terminals?${params.toString()}`);
+      if (!response.ok) {
+        return;
+      }
+      const data = await response.json();
+      if (geoChartInstance) geoChartInstance.destroy();
+      geoChartInstance = new Chart(geoChart, {
+        type: 'scatter',
+        data: {
+          datasets: data.map((terminal) => ({
+            label: terminal.terminal_name,
+            data: [{ x: terminal.longitude, y: terminal.latitude }],
+            backgroundColor: terminal.compliance_rate > 80 ? '#2b7a78' : '#ef476f',
+            pointRadius: Math.max(6, Math.min(16, terminal.sample_count / 20)),
+          })),
+        },
+        options: {
+          responsive: true,
+          plugins: { legend: { position: 'bottom' } },
+          scales: {
+            x: { title: { display: true, text: 'Longitud' } },
+            y: { title: { display: true, text: 'Latitud' } },
+          },
+        },
+      });
+    }
+
+    async function populateEventSelectors() {
+      eventRoute.innerHTML = '<option value="">Seleccione una ruta</option>';
+      routesList.forEach((route) => {
+        const option = document.createElement('option');
+        option.value = route.id || '';
+        option.textContent = `${route.code}: ${route.origin} → ${route.destination}`;
+        eventRoute.appendChild(option);
+      });
+      eventTerminal.innerHTML = '<option value="">Seleccione una terminal</option>';
+      terminalsList.forEach((terminal) => {
+        const option = document.createElement('option');
+        option.value = terminal.id || '';
+        option.textContent = terminal.name;
+        eventTerminal.appendChild(option);
+      });
+    }
+
+    async function loadEvents() {
+      const params = new URLSearchParams();
+      if (selectedDate) {
+        params.append('from_date', `${selectedDate}T00:00:00`);
+        params.append('to_date', `${selectedDate}T23:59:59`);
+      } else {
+        const year = yearInput.value;
+        const month = monthInput.value;
+        if (year && year !== 'all') params.append('from_date', `${year}-01-01T00:00:00`);
+        if (year && year !== 'all') params.append('to_date', `${year}-12-31T23:59:59`);
+        if (month && month !== 'all' && year && year !== 'all') {
+          const monthNum = month.toString().padStart(2, '0');
+          params.set('from_date', `${year}-${monthNum}-01T00:00:00`);
+          const lastDay = new Date(year, Number(month), 0).getDate();
+          params.set('to_date', `${year}-${monthNum}-${lastDay}T23:59:59`);
+        }
+      }
+      const token = getToken();
+      if (!token) {
+        eventBody.innerHTML = '<tr><td colspan="7">Inicie sesión para ver los eventos.</td></tr>';
+        return;
+      }
+      const response = await fetch(`${apiBase}/search/events?${params.toString()}`, {
+        headers: authHeader(),
+      });
+      if (!response.ok) {
+        eventBody.innerHTML = '<tr><td colspan="7">No se pudieron cargar los eventos.</td></tr>';
+        return;
+      }
+      const events = await response.json();
+      renderEvents(events);
+    }
+
+    function renderEvents(events) {
+      if (!events.length) {
+        eventBody.innerHTML = '<tr><td colspan="7">No hay eventos registrados.</td></tr>';
+        return;
+      }
+      eventBody.innerHTML = events
+        .map(
+          (event) => `
+            <tr>
+              <td>${event.id}</td>
+              <td>${event.route_code}</td>
+              <td>${event.terminal_name}</td>
+              <td>${new Date(event.dispatch_datetime).toLocaleString()}</td>
+              <td>${event.passengers_boarded}</td>
+              <td>${event.on_time ? 'A tiempo' : 'Retrasado'}</td>
+              <td>
+                <button type="button" data-event-id="${event.id}" class="edit-event">Editar</button>
+                <button type="button" data-event-id="${event.id}" class="delete-event">Eliminar</button>
+              </td>
+            </tr>
+          `,
+        )
+        .join('');
+      document.querySelectorAll('.edit-event').forEach((button) => {
+        button.addEventListener('click', () => editEvent(Number(button.dataset.eventId)));
+      });
+      document.querySelectorAll('.delete-event').forEach((button) => {
+        button.addEventListener('click', () => deleteEvent(Number(button.dataset.eventId)));
+      });
+    }
+
+    function resetEventForm() {
+      selectedEventId = null;
+      eventRoute.value = '';
+      eventTerminal.value = '';
+      eventDateTime.value = '';
+      eventScheduled.value = '';
+      eventActual.value = '';
+      eventPassengers.value = '';
+      eventFrequency.value = '';
+      eventCapacity.value = '';
+      eventServiceLevel.value = 'Standard';
+      eventDayType.value = 'weekday';
+      eventPeakPeriod.value = 'morning';
+      eventWeather.value = '';
+      eventMessage.textContent = '';
+    }
+
+    async function saveEvent() {
+      eventMessage.textContent = 'Guardando evento...';
+      const payload = {
+        route_id: Number(eventRoute.value),
+        terminal_id: Number(eventTerminal.value),
+        dispatch_datetime: eventDateTime.value,
+        scheduled_minutes: Number(eventScheduled.value),
+        actual_minutes: Number(eventActual.value),
+        passengers_boarded: Number(eventPassengers.value),
+        planned_frequency_minutes: Number(eventFrequency.value),
+        vehicle_capacity: Number(eventCapacity.value),
+        service_level: eventServiceLevel.value,
+        day_type: eventDayType.value,
+        peak_period: eventPeakPeriod.value,
+        weather_condition: eventWeather.value,
+      };
+      const method = selectedEventId ? 'PUT' : 'POST';
+      const url = selectedEventId ? `${apiBase}/events/${selectedEventId}` : `${apiBase}/events`;
+      const response = await fetch(url, {
+        method,
+        headers: { 'Content-Type': 'application/json', ...authHeader() },
+        body: JSON.stringify(payload),
+      });
+      if (!response.ok) {
+        eventMessage.textContent = 'Error al guardar el evento. Verifique los datos e intente de nuevo.';
+        return;
+      }
+      eventMessage.textContent = selectedEventId ? 'Evento actualizado.' : 'Evento creado correctamente.';
+      resetEventForm();
+      await loadEvents();
+      await loadMetrics();
+      await loadTimeSeries();
+      await loadGeoData();
+    }
+
+    async function editEvent(eventId) {
+      const response = await fetch(`${apiBase}/events/${eventId}`, {
+        headers: authHeader(),
+      });
+      if (!response.ok) {
+        eventMessage.textContent = 'No se pudo cargar el evento para editar.';
+        return;
+      }
+      const event = await response.json();
+      selectedEventId = event.id;
+      eventRoute.value = event.route_id || '';
+      eventTerminal.value = event.terminal_id || '';
+      eventDateTime.value = event.dispatch_datetime.slice(0, 16);
+      eventScheduled.value = event.scheduled_minutes;
+      eventActual.value = event.actual_minutes;
+      eventPassengers.value = event.passengers_boarded;
+      eventFrequency.value = event.planned_frequency_minutes;
+      eventCapacity.value = event.vehicle_capacity;
+      eventServiceLevel.value = event.service_level || 'Standard';
+      eventDayType.value = event.day_type || 'weekday';
+      eventPeakPeriod.value = event.peak_period || 'morning';
+      eventWeather.value = event.weather_condition || '';
+      eventMessage.textContent = 'Editando evento seleccionado.';
+    }
+
+    async function deleteEvent(eventId) {
+      if (!confirm('¿Eliminar este evento?')) {
+        return;
+      }
+      const response = await fetch(`${apiBase}/events/${eventId}`, {
+        method: 'DELETE',
+        headers: authHeader(),
+      });
+      if (!response.ok) {
+        eventMessage.textContent = 'No se pudo eliminar el evento.';
+        return;
+      }
+      eventMessage.textContent = 'Evento eliminado.';
+      await loadEvents();
+      await loadMetrics();
+      await loadTimeSeries();
+      await loadGeoData();
     }
 
     function renderTable(terminals) {
@@ -431,15 +958,88 @@
       await loadIncidents();
     }
 
+    async function loadUsers() {
+      const usersList = document.getElementById('users-list');
+      usersList.textContent = 'Cargando...';
+      const response = await fetch(`${apiBase}/users`, { headers: authHeader() });
+      if (!response.ok) {
+        usersList.textContent = 'Error al cargar usuarios (requiere rol admin).';
+        return;
+      }
+      const users = await response.json();
+      usersList.innerHTML = users.map(u => `
+        <div class="user-row">
+          <span>${u.username} (${u.role})</span>
+          <button class="secondary-button" onclick="deleteUser(${u.id})">Eliminar</button>
+        </div>
+      `).join('');
+    }
+
+    async function deleteUser(userId) {
+      if (!confirm('¿Eliminar este usuario?')) return;
+      const response = await fetch(`${apiBase}/users/${userId}`, { method: 'DELETE', headers: authHeader() });
+      if (response.ok) {
+        loadUsers();
+      } else {
+        alert('Error al eliminar usuario');
+      }
+    }
+
+    async function loadSystemStats() {
+      const statsDiv = document.getElementById('system-stats');
+      statsDiv.textContent = 'Cargando...';
+      const response = await fetch(`${apiBase}/admin/stats`, { headers: authHeader() });
+      if (!response.ok) {
+        statsDiv.textContent = 'Error al cargar estadísticas (requiere rol admin).';
+        return;
+      }
+      const stats = await response.json();
+      statsDiv.innerHTML = `
+        <p>Usuarios totales: ${stats.total_users}</p>
+        <p>Eventos de despacho: ${stats.total_events}</p>
+        <p>Incidencias: ${stats.total_incidents}</p>
+        <p>Observaciones clima: ${stats.total_weather}</p>
+        <p>Terminales: ${stats.total_terminals}</p>
+        <p>Rutas: ${stats.total_routes}</p>
+      `;
+    }
+
     loginButton.addEventListener('click', login);
     logoutButton.addEventListener('click', logout);
-    refreshButton.addEventListener('click', loadMetrics);
+    refreshButton.addEventListener('click', () => {
+      loadMetrics();
+      loadTimeSeries();
+      loadGeoData();
+      loadEvents();
+    });
+    yearInput.addEventListener('change', () => {
+      updateMonthOptions();
+      loadMetrics();
+      loadCalendar();
+      loadTimeSeries();
+      loadGeoData();
+      loadEvents();
+    });
+    monthInput.addEventListener('change', () => {
+      loadMetrics();
+      loadCalendar();
+      loadTimeSeries();
+      loadGeoData();
+      loadEvents();
+    });
+    clearDate.addEventListener('click', clearSelectedDate);
+    saveEventButton.addEventListener('click', saveEvent);
     document.getElementById('submitIncident').addEventListener('click', createIncident);
+    document.getElementById('loadUsers').addEventListener('click', loadUsers);
+    document.getElementById('loadSystemStats').addEventListener('click', loadSystemStats);
 
     loadCurrentUser();
     loadMetadata();
     loadMetrics();
     loadIncidents();
+    loadTimeSeries();
+    loadGeoData();
+    loadEvents();
   </script>
 </body>
 </html>

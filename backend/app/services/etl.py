@@ -98,6 +98,16 @@ async def load_seed_data() -> None:
                     actual_minutes = int(row["actual_minutes"])
                     passengers = int(row["passengers_boarded"])
                     dispatch_datetime = datetime.fromisoformat(row["dispatch_datetime"])
+                    terminal_latitude = float(row.get("terminal_latitude", "0") or 0)
+                    terminal_longitude = float(row.get("terminal_longitude", "0") or 0)
+                    planned_frequency = int(row.get("planned_frequency_minutes", "0") or 0)
+                    service_level = row.get("service_level", "Standard").strip() or "Standard"
+                    day_type = row.get("day_type", "weekday").strip() or "weekday"
+                    peak_period = row.get("peak_period", "offpeak").strip() or "offpeak"
+                    vehicle_capacity = int(row.get("vehicle_capacity", "50") or 50)
+                    passenger_load_factor = float(row.get("passenger_load_factor", "0") or 0)
+                    weather_condition = row.get("weather_condition", "").strip() or None
+                    route_type = row.get("route_type", "Regular").strip() or "Regular"
                 except Exception:
                     continue
 
@@ -105,28 +115,41 @@ async def load_seed_data() -> None:
                     continue
 
                 if terminal_name not in terminals:
-                    terminal = Terminal(name=terminal_name, zone=row.get("zone", "Central"))
+                    terminal = Terminal(
+                        name=terminal_name,
+                        zone=row.get("zone", "Central"),
+                        latitude=terminal_latitude,
+                        longitude=terminal_longitude,
+                    )
                     session.add(terminal)
                     await session.flush()
                     terminals[terminal_name] = terminal
                 else:
                     terminal = terminals[terminal_name]
+                    if terminal.latitude == 0.0 and terminal_latitude != 0.0:
+                        terminal.latitude = terminal_latitude
+                    if terminal.longitude == 0.0 and terminal_longitude != 0.0:
+                        terminal.longitude = terminal_longitude
 
                 if route_code not in routes:
                     route = Route(
                         code=route_code,
                         origin=row.get("origin", "Unknown"),
                         destination=row.get("destination", "Unknown"),
+                        route_type=route_type,
                     )
                     session.add(route)
                     await session.flush()
                     routes[route_code] = route
                 else:
                     route = routes[route_code]
+                    if route.route_type == "Regular" and route_type != "Regular":
+                        route.route_type = route_type
 
-                if actual_minutes < 0 or scheduled_minutes < 0:
+                if actual_minutes < 0 or scheduled_minutes < 0 or vehicle_capacity <= 0:
                     continue
 
+                normalized_load = min(100.0, max(0.0, passenger_load_factor or round(passengers / vehicle_capacity * 100, 1)))
                 events.append(
                     DispatchEvent(
                         route_id=route.id,
@@ -136,6 +159,14 @@ async def load_seed_data() -> None:
                         actual_minutes=actual_minutes,
                         passengers_boarded=passengers,
                         on_time=(actual_minutes - scheduled_minutes) <= 5,
+                        planned_frequency_minutes=planned_frequency,
+                        route_type=route.route_type,
+                        service_level=service_level,
+                        day_type=day_type,
+                        peak_period=peak_period,
+                        vehicle_capacity=vehicle_capacity,
+                        passenger_load_factor=normalized_load,
+                        weather_condition=weather_condition,
                     )
                 )
 
